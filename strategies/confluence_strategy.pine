@@ -1,0 +1,286 @@
+//@version=5
+// Copyright (c) 2025, Confluence Trading Strategy
+// Multi-Indicator Confluence Strategy with Alerts, TP/SL, and Accuracy Display
+strategy(title="Confluence Strategy - Maximum Accuracy", 
+         shorttitle="Confluence", 
+         overlay=true, 
+         pyramiding=0, 
+         calc_on_every_tick=false,
+         process_orders_on_close=true,
+         default_qty_type=strategy.percent_of_equity,
+         default_qty_value=100,
+         initial_capital=10000,
+         commission_type=strategy.commission.percent,
+         commission_value=0.1)
+
+// ============================================================================
+// INPUTS
+// ============================================================================
+
+// Trade Direction
+enableLong = input.bool(true, "Enable Long Trades", group="Trade Direction")
+enableShort = input.bool(true, "Enable Short Trades", group="Trade Direction")
+
+// Trend Filter
+emaLength = input.int(200, "EMA Length (Trend Filter)", minval=1, group="Trend Filter")
+useTrendFilter = input.bool(true, "Use Trend Filter", group="Trend Filter")
+
+// RSI Settings
+rsiLength = input.int(14, "RSI Length", minval=1, group="RSI")
+rsiOversold = input.int(30, "RSI Oversold Level", minval=0, maxval=50, group="RSI")
+rsiOverbought = input.int(70, "RSI Overbought Level", minval=50, maxval=100, group="RSI")
+
+// MACD Settings
+macdFast = input.int(12, "MACD Fast Length", minval=1, group="MACD")
+macdSlow = input.int(26, "MACD Slow Length", minval=1, group="MACD")
+macdSignal = input.int(9, "MACD Signal Length", minval=1, group="MACD")
+
+// ADX Settings
+adxLength = input.int(14, "ADX Length", minval=1, group="ADX")
+adxThreshold = input.int(20, "ADX Threshold", minval=0, maxval=50, group="ADX")
+useAdxFilter = input.bool(true, "Use ADX Filter", group="ADX")
+
+// Volume Filter
+useVolumeFilter = input.bool(true, "Use Volume Filter", group="Volume")
+volumeMultiplier = input.float(1.2, "Volume Multiplier", minval=0.1, step=0.1, group="Volume")
+
+// Confluence Scoring
+weightTrend = input.float(1.0, "Trend Weight", minval=0, step=0.1, group="Confluence Scoring")
+weightRSI = input.float(1.0, "RSI Weight", minval=0, step=0.1, group="Confluence Scoring")
+weightMACD = input.float(1.0, "MACD Weight", minval=0, step=0.1, group="Confluence Scoring")
+weightADX = input.float(1.0, "ADX Weight", minval=0, step=0.1, group="Confluence Scoring")
+weightVolume = input.float(0.5, "Volume Weight", minval=0, step=0.1, group="Confluence Scoring")
+scoreThreshold = input.float(2.5, "Entry Score Threshold", minval=0, step=0.1, group="Confluence Scoring")
+
+// Risk Management
+atrLength = input.int(14, "ATR Length", minval=1, group="Risk Management")
+atrMultiplierSL = input.float(1.5, "ATR Multiplier for Stop Loss", minval=0.1, step=0.1, group="Risk Management")
+riskRewardRatio = input.float(1.5, "Risk/Reward Ratio", minval=0.1, step=0.1, group="Risk Management")
+
+// Display Settings
+showLabels = input.bool(true, "Show Entry/Exit Labels", group="Display")
+showTable = input.bool(true, "Show Performance Table", group="Display")
+
+// ============================================================================
+// INDICATOR CALCULATIONS
+// ============================================================================
+
+// Trend Filter - EMA
+ema = ta.ema(close, emaLength)
+trendUp = close > ema
+trendDown = close < ema
+
+// RSI
+rsi = ta.rsi(close, rsiLength)
+rsiCrossUp = ta.crossover(rsi, rsiOversold)
+rsiCrossDown = ta.crossunder(rsi, rsiOverbought)
+rsiBullish = rsi < 50 and rsi > rsiOversold
+rsiBearish = rsi > 50 and rsi < rsiOverbought
+
+// MACD
+[macdLine, signalLine, histLine] = ta.macd(close, macdFast, macdSlow, macdSignal)
+macdCrossUp = ta.crossover(macdLine, signalLine)
+macdCrossDown = ta.crossunder(macdLine, signalLine)
+macdBullish = macdLine > signalLine
+macdBearish = macdLine < signalLine
+
+// ADX
+[diPlus, diMinus, adx] = ta.dmi(adxLength, adxLength)
+adxStrong = adx > adxThreshold
+
+// Volume
+avgVolume = ta.sma(volume, 20)
+volumeHigh = volume > avgVolume * volumeMultiplier
+
+// ATR for Stop Loss and Take Profit
+atr = ta.atr(atrLength)
+
+// ============================================================================
+// CONFLUENCE SCORING SYSTEM
+// ============================================================================
+
+// Long Score Components
+longScoreTrend = (useTrendFilter ? (trendUp ? weightTrend : 0) : weightTrend)
+longScoreRSI = (rsiCrossUp or rsiBullish) ? weightRSI : 0
+longScoreMACD = (macdCrossUp or macdBullish) ? weightMACD : 0
+longScoreADX = (useAdxFilter ? (adxStrong ? weightADX : 0) : weightADX)
+longScoreVolume = (useVolumeFilter ? (volumeHigh ? weightVolume : 0) : weightVolume)
+
+longScore = longScoreTrend + longScoreRSI + longScoreMACD + longScoreADX + longScoreVolume
+
+// Short Score Components
+shortScoreTrend = (useTrendFilter ? (trendDown ? weightTrend : 0) : weightTrend)
+shortScoreRSI = (rsiCrossDown or rsiBearish) ? weightRSI : 0
+shortScoreMACD = (macdCrossDown or macdBearish) ? weightMACD : 0
+shortScoreADX = (useAdxFilter ? (adxStrong ? weightADX : 0) : weightADX)
+shortScoreVolume = (useVolumeFilter ? (volumeHigh ? weightVolume : 0) : weightVolume)
+
+shortScore = shortScoreTrend + shortScoreRSI + shortScoreMACD + shortScoreADX + shortScoreVolume
+
+// ============================================================================
+// ENTRY CONDITIONS
+// ============================================================================
+
+longCondition = enableLong and longScore >= scoreThreshold and strategy.position_size == 0 and barstate.isconfirmed
+shortCondition = enableShort and shortScore >= scoreThreshold and strategy.position_size == 0 and barstate.isconfirmed
+
+// ============================================================================
+// POSITION MANAGEMENT
+// ============================================================================
+
+var float entryPrice = na
+var float stopLoss = na
+var float takeProfit = na
+var float entryScore = na
+
+if longCondition
+    entryPrice := close
+    stopLoss := entryPrice - (atr * atrMultiplierSL)
+    takeProfit := entryPrice + (atr * atrMultiplierSL * riskRewardRatio)
+    entryScore := longScore
+    strategy.entry("Long", strategy.long)
+    
+    if showLabels
+        label.new(bar_index, low, 
+                 text="LONG\n" + str.tostring(entryPrice, "#.####") + "\nSL: " + str.tostring(stopLoss, "#.####") + "\nTP: " + str.tostring(takeProfit, "#.####") + "\nScore: " + str.tostring(longScore, "#.#"), 
+                 style=label.style_label_up, 
+                 color=color.new(color.green, 0), 
+                 textcolor=color.white, 
+                 size=size.small)
+    
+    alertMessage = "🟢 LONG SIGNAL - " + syminfo.ticker + "\n" +
+                   "Entry Price: " + str.tostring(entryPrice, "#.####") + "\n" +
+                   "Stop Loss: " + str.tostring(stopLoss, "#.####") + "\n" +
+                   "Take Profit: " + str.tostring(takeProfit, "#.####") + "\n" +
+                   "Risk/Reward: 1:" + str.tostring(riskRewardRatio, "#.#") + "\n" +
+                   "Confluence Score: " + str.tostring(longScore, "#.#") + "/" + str.tostring(scoreThreshold, "#.#") + "\n" +
+                   "RSI: " + str.tostring(rsi, "#.#") + "\n" +
+                   "ADX: " + str.tostring(adx, "#.#") + "\n" +
+                   "Timeframe: " + timeframe.period
+    alert(alertMessage, alert.freq_once_per_bar_close)
+
+if shortCondition
+    entryPrice := close
+    stopLoss := entryPrice + (atr * atrMultiplierSL)
+    takeProfit := entryPrice - (atr * atrMultiplierSL * riskRewardRatio)
+    entryScore := shortScore
+    strategy.entry("Short", strategy.short)
+    
+    if showLabels
+        label.new(bar_index, high, 
+                 text="SHORT\n" + str.tostring(entryPrice, "#.####") + "\nSL: " + str.tostring(stopLoss, "#.####") + "\nTP: " + str.tostring(takeProfit, "#.####") + "\nScore: " + str.tostring(shortScore, "#.#"), 
+                 style=label.style_label_down, 
+                 color=color.new(color.red, 0), 
+                 textcolor=color.white, 
+                 size=size.small)
+    
+    alertMessage = "🔴 SHORT SIGNAL - " + syminfo.ticker + "\n" +
+                   "Entry Price: " + str.tostring(entryPrice, "#.####") + "\n" +
+                   "Stop Loss: " + str.tostring(stopLoss, "#.####") + "\n" +
+                   "Take Profit: " + str.tostring(takeProfit, "#.####") + "\n" +
+                   "Risk/Reward: 1:" + str.tostring(riskRewardRatio, "#.#") + "\n" +
+                   "Confluence Score: " + str.tostring(shortScore, "#.#") + "/" + str.tostring(scoreThreshold, "#.#") + "\n" +
+                   "RSI: " + str.tostring(rsi, "#.#") + "\n" +
+                   "ADX: " + str.tostring(adx, "#.#") + "\n" +
+                   "Timeframe: " + timeframe.period
+    alert(alertMessage, alert.freq_once_per_bar_close)
+
+// Exit Conditions
+if strategy.position_size > 0
+    strategy.exit("Long Exit", "Long", stop=stopLoss, limit=takeProfit)
+    
+if strategy.position_size < 0
+    strategy.exit("Short Exit", "Short", stop=stopLoss, limit=takeProfit)
+
+// Exit Alerts
+if strategy.position_size[1] > 0 and strategy.position_size == 0
+    exitPrice = close
+    pnl = ((exitPrice - entryPrice) / entryPrice) * 100
+    exitMessage = "✅ LONG EXIT - " + syminfo.ticker + "\n" +
+                  "Exit Price: " + str.tostring(exitPrice, "#.####") + "\n" +
+                  "Entry Price: " + str.tostring(entryPrice, "#.####") + "\n" +
+                  "P&L: " + str.tostring(pnl, "#.##") + "%\n" +
+                  "Timeframe: " + timeframe.period
+    alert(exitMessage, alert.freq_once_per_bar_close)
+
+if strategy.position_size[1] < 0 and strategy.position_size == 0
+    exitPrice = close
+    pnl = ((entryPrice - exitPrice) / entryPrice) * 100
+    exitMessage = "✅ SHORT EXIT - " + syminfo.ticker + "\n" +
+                  "Exit Price: " + str.tostring(exitPrice, "#.####") + "\n" +
+                  "Entry Price: " + str.tostring(entryPrice, "#.####") + "\n" +
+                  "P&L: " + str.tostring(pnl, "#.##") + "%\n" +
+                  "Timeframe: " + timeframe.period
+    alert(exitMessage, alert.freq_once_per_bar_close)
+
+// ============================================================================
+// PERFORMANCE METRICS
+// ============================================================================
+
+totalTrades = strategy.closedtrades
+winningTrades = strategy.wintrades
+losingTrades = strategy.losstrades
+accuracy = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0
+profitFactor = strategy.grossloss != 0 ? math.abs(strategy.grossprofit / strategy.grossloss) : 0
+avgWin = winningTrades > 0 ? strategy.grossprofit / winningTrades : 0
+avgLoss = losingTrades > 0 ? strategy.grossloss / losingTrades : 0
+netProfit = strategy.netprofit
+netProfitPercent = (netProfit / strategy.initial_capital) * 100
+
+// ============================================================================
+// DISPLAY TABLE
+// ============================================================================
+
+if showTable
+    var table perfTable = table.new(position.top_right, 2, 9, border_width=1)
+    
+    if barstate.islast
+        table.cell(perfTable, 0, 0, "Performance Metrics", bgcolor=color.new(color.blue, 70), text_color=color.white, text_size=size.normal)
+        table.cell(perfTable, 1, 0, "", bgcolor=color.new(color.blue, 70))
+        
+        table.cell(perfTable, 0, 1, "Accuracy", text_color=color.white, text_size=size.small)
+        accuracyColor = accuracy >= 60 ? color.new(color.green, 70) : accuracy >= 50 ? color.new(color.orange, 70) : color.new(color.red, 70)
+        table.cell(perfTable, 1, 1, str.tostring(accuracy, "#.##") + "%", bgcolor=accuracyColor, text_color=color.white, text_size=size.small)
+        
+        table.cell(perfTable, 0, 2, "Total Trades", text_color=color.white, text_size=size.small)
+        table.cell(perfTable, 1, 2, str.tostring(totalTrades), bgcolor=color.new(color.gray, 70), text_color=color.white, text_size=size.small)
+        
+        table.cell(perfTable, 0, 3, "Winning Trades", text_color=color.white, text_size=size.small)
+        table.cell(perfTable, 1, 3, str.tostring(winningTrades), bgcolor=color.new(color.green, 70), text_color=color.white, text_size=size.small)
+        
+        table.cell(perfTable, 0, 4, "Losing Trades", text_color=color.white, text_size=size.small)
+        table.cell(perfTable, 1, 4, str.tostring(losingTrades), bgcolor=color.new(color.red, 70), text_color=color.white, text_size=size.small)
+        
+        table.cell(perfTable, 0, 5, "Profit Factor", text_color=color.white, text_size=size.small)
+        pfColor = profitFactor >= 2 ? color.new(color.green, 70) : profitFactor >= 1 ? color.new(color.orange, 70) : color.new(color.red, 70)
+        table.cell(perfTable, 1, 5, str.tostring(profitFactor, "#.##"), bgcolor=pfColor, text_color=color.white, text_size=size.small)
+        
+        table.cell(perfTable, 0, 6, "Avg Win", text_color=color.white, text_size=size.small)
+        table.cell(perfTable, 1, 6, str.tostring(avgWin, "#.##"), bgcolor=color.new(color.green, 70), text_color=color.white, text_size=size.small)
+        
+        table.cell(perfTable, 0, 7, "Avg Loss", text_color=color.white, text_size=size.small)
+        table.cell(perfTable, 1, 7, str.tostring(math.abs(avgLoss), "#.##"), bgcolor=color.new(color.red, 70), text_color=color.white, text_size=size.small)
+        
+        table.cell(perfTable, 0, 8, "Net Profit", text_color=color.white, text_size=size.small)
+        npColor = netProfit > 0 ? color.new(color.green, 70) : color.new(color.red, 70)
+        table.cell(perfTable, 1, 8, str.tostring(netProfitPercent, "#.##") + "%", bgcolor=npColor, text_color=color.white, text_size=size.small)
+
+// ============================================================================
+// PLOT INDICATORS
+// ============================================================================
+
+plot(ema, "EMA", color=color.new(color.blue, 0), linewidth=2)
+plot(strategy.position_size > 0 ? stopLoss : na, "Long SL", color=color.new(color.red, 0), style=plot.style_linebr, linewidth=2)
+plot(strategy.position_size > 0 ? takeProfit : na, "Long TP", color=color.new(color.green, 0), style=plot.style_linebr, linewidth=2)
+plot(strategy.position_size < 0 ? stopLoss : na, "Short SL", color=color.new(color.red, 0), style=plot.style_linebr, linewidth=2)
+plot(strategy.position_size < 0 ? takeProfit : na, "Short TP", color=color.new(color.green, 0), style=plot.style_linebr, linewidth=2)
+
+// Background color for trend
+bgcolor(trendUp ? color.new(color.green, 95) : color.new(color.red, 95), title="Trend Background")
+
+// ============================================================================
+// ALERT CONDITIONS (Fallback for users who can't use alert() function)
+// ============================================================================
+
+alertcondition(longCondition, title="Long Entry Alert", message="LONG Entry Signal")
+alertcondition(shortCondition, title="Short Entry Alert", message="SHORT Entry Signal")
