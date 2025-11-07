@@ -3,7 +3,7 @@
 // Vortex Bands script may be freely distributed under the terms of the GPL-3.0 license.
 study("Vortex Bands", shorttitle="VB", overlay=true)
 
-length = input(title="Length", type=input.integer, defval=20)
+length = input(title="Length", type=input.integer, defval=20, minval=2)
 mult = input(title="Multiplier", type=input.float, step=0.1, defval=2)
 src = input(title="Source", type=input.source, defval=hlc3)
 barColoringType = input(title="Bar Coloring", defval="None", options=["None", "Upper > Lower", "Close Above/Below Basis", "Close Inside Cloud", "Wicks Inside Cloud"])
@@ -15,9 +15,10 @@ _ema(src, alpha) =>
 
 _mnma(src, length) =>
     alpha = 2 / (length + 1)
-    ema1 = _ema(src, alpha)
-    ema2 = _ema(ema1, alpha)
-    out = ((2 - alpha) * ema1 - ema2) / (1 - alpha)
+    safeAlpha = math.min(0.999, alpha)
+    ema1 = _ema(src, safeAlpha)
+    ema2 = _ema(ema1, safeAlpha)
+    out = ((2 - safeAlpha) * ema1 - ema2) / (1 - safeAlpha)
     out
 
 basis = _mnma(src, length)
