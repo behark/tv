@@ -1,0 +1,99 @@
+
+exchange:
+  name: mexc
+  type: futures  # futures or spot
+  testnet: false
+
+pairs:
+  - LAB/USDT
+  - MINA/USDT
+  - APR/USDT
+  - KITE/USDT
+  - BLUAI/USDT
+  - ON/USDT
+  - RIVER/USDT
+  - CLO/USDT
+
+timeframe: 15m
+
+strategy_mode: trend_following
+
+strategy:
+  
+  frama_length: 16  # Adaptive baseline, adjusts to volatility
+  
+  rsx_length: 14
+  rsx_oversold: 30
+  rsx_overbought: 70
+  
+  supertrend_length: 22
+  supertrend_mult: 3.0
+  
+  chandelier_length: 22
+  chandelier_mult: 3.0
+  
+  psar_start: 0.02
+  psar_increment: 0.02
+  psar_max: 0.2
+  
+  iqr_length: 20
+  iqr_mult: 1.5
+  use_iqr_bands: true  # If false, uses MAD bands instead
+  
+  kb_length: 20
+  kb_mult: 2.0
+  
+  mad_length: 20
+  mad_mult: 2.0
+  
+  vr_short: 5
+  vr_long: 20
+  vr_threshold: 0.5  # Above this = expansion, below = contraction
+  
+  klinger_fast: 34
+  klinger_slow: 55
+  klinger_signal: 13
+  
+  
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  
+  adx_length: 14
+  adx_threshold: 20  # Above = trending, below = ranging
+  
+  atr_length: 14
+  
+  volume_period: 20
+  volume_multiplier: 1.2
+  
+  
+  weights:
+    trend: 1.0        # FRAMA baseline
+    supertrend: 2.0   # Primary trigger (higher weight)
+    rsx: 1.0          # Momentum
+    macd: 1.0         # Direction
+    adx: 1.0          # Strength
+    volume: 0.5       # Klinger confirmation
+  
+  score_threshold: 3.0  # Minimum score to enter (3.0 = need 3+ indicators aligned)
+  
+  
+  risk_reward_ratio: 1.5  # TP/SL ratio (1.5 = 1.5:1 reward/risk)
+  atr_multiplier_sl: 1.5  # ATR multiplier for stop loss
+  
+  mr_adx_threshold: 20  # Only trade MR when ADX below this
+  mr_atr_mult: 1.0      # Tighter stops for MR
+  
+  breakout_volume_mult: 1.5  # Volume must be 1.5x average for breakouts
+
+enable_long: true
+enable_short: true
+
+bot:
+  check_interval: 60  # seconds between checks
+  lookback_bars: 300  # historical bars to fetch (need 200+ for indicators)
+  
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  file: trading_bot_advanced.log

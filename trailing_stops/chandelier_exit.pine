@@ -19,11 +19,11 @@ awaitBarConfirmation = input.bool(true, title = 'Await Bar Confirmation', group 
 
 atr = mult * ta.atr(length)
 
-longStop = (useClose ? ta.highest(close, length) : ta.highest(length)) - atr
+longStop = (useClose ? ta.highest(close, length) : ta.highest(high, length)) - atr
 longStopPrev = nz(longStop[1], longStop)
 longStop := close[1] > longStopPrev ? math.max(longStop, longStopPrev) : longStop
 
-shortStop = (useClose ? ta.lowest(close, length) : ta.lowest(length)) + atr
+shortStop = (useClose ? ta.lowest(close, length) : ta.lowest(low, length)) + atr
 shortStopPrev = nz(shortStop[1], shortStop)
 shortStop := close[1] < shortStopPrev ? math.min(shortStop, shortStopPrev) : shortStop
 
