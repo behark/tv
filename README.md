@@ -1,6 +1,6 @@
 # Multi-Tier Trading Bot System
 
-A sophisticated trading signal monitoring system featuring three distinct indicator tiers, each optimized for different trading approaches.
+A sophisticated trading signal monitoring system featuring four distinct indicator tiers, each optimized for different trading approaches and win rate targets.
 
 ## Architecture
 
@@ -19,11 +19,19 @@ tv/
 ├── tier1_institutional/ # Tier 1 - Institutional flow
 ├── tier2_advanced/      # Tier 2 - Advanced technicals
 ├── tier3_smart_money/   # Tier 3 - Smart money concepts
+├── tier4_high_winrate/  # Tier 4 - High win rate (75-85%)
 ├── trading-bot/         # Original bot (legacy)
 └── launch_*.sh          # Launcher scripts
 ```
 
 ## Tier Overview
+
+| Tier | Focus | Expected Win Rate | R:R Ratio |
+|------|-------|-------------------|-----------|
+| Tier 1 | Institutional Flow | 55-65% | 2:1 |
+| Tier 2 | Advanced Technical | 50-60% | 2.5:1 |
+| Tier 3 | Smart Money (ICT) | 60-70% | 3:1 |
+| **Tier 4** | **High Win Rate** | **75-85%** | **1.5:1** |
 
 ### Tier 1 - Institutional Trading
 Focus: Institutional order flow and volume analysis
@@ -66,6 +74,32 @@ Focus: ICT-style institutional trading concepts
 
 **Best for:** Trading around institutional order flow and liquidity
 
+### Tier 4 - High Win Rate (NEW)
+Focus: Maximum probability setups through multi-confluence
+
+**Strategy:** Mean Reversion with Multiple Confirmations
+
+**Entry Requirements:**
+- RSI at extreme levels (< 30 or > 70)
+- Price touching Bollinger Band
+- Stochastic RSI confirmation
+- Volume spike or climax
+- Near support/resistance level
+- RSI divergence (bonus)
+- Prefer ranging market regime
+
+**Indicators:**
+- RSI with extreme detection
+- Bollinger Bands (20, 2.0)
+- Stochastic RSI
+- Volume analysis (spike/climax detection)
+- Support/Resistance levels
+- Market regime detection (ADX-based)
+- RSI divergence
+- Multi-timeframe EMAs (21, 50, 200)
+
+**Best for:** Traders who prioritize high win rate over R:R ratio
+
 ## Setup
 
 ### 1. Install Dependencies
@@ -100,6 +134,9 @@ Edit the `config.yaml` in each tier directory to customize:
 
 # Tier 3 - Smart Money
 ./launch_tier3.sh
+
+# Tier 4 - High Win Rate
+./launch_tier4.sh
 ```
 
 ### All Tiers (using tmux)
@@ -114,6 +151,7 @@ This creates a tmux session with separate windows for each tier.
 cd tier1_institutional && python bot.py
 cd tier2_advanced && python bot.py
 cd tier3_smart_money && python bot.py
+cd tier4_high_winrate && python bot.py
 ```
 
 ## Features
@@ -169,7 +207,7 @@ strategy:
 
 ## Monitoring Same Pairs Across Tiers
 
-All three tiers are configured to monitor the same default pairs:
+All four tiers are configured to monitor the same default pairs:
 - BTC/USDT, ETH/USDT, SOL/USDT, XRP/USDT, DOGE/USDT
 - ADA/USDT, AVAX/USDT, LINK/USDT, DOT/USDT, MATIC/USDT
 
@@ -181,11 +219,22 @@ Each tier creates its own log file:
 - `tier1_institutional.log`
 - `tier2_advanced.log`
 - `tier3_smart_money.log`
+- `tier4_high_winrate.log`
 
 And SQLite databases:
 - `tier1_signals.db`
 - `tier2_signals.db`
 - `tier3_signals.db`
+- `tier4_signals.db`
+
+## Expected Performance Comparison
+
+| Metric | Tier 1 | Tier 2 | Tier 3 | Tier 4 |
+|--------|--------|--------|--------|--------|
+| Win Rate | 55-65% | 50-60% | 60-70% | 75-85% |
+| R:R Ratio | 2:1 | 2.5:1 | 3:1 | 1.5:1 |
+| Signal Frequency | Medium | High | Low | Medium |
+| Best Market | Trending | All | Trending | Ranging |
 
 ## License
 

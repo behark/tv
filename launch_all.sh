@@ -6,6 +6,7 @@ cd "$SCRIPT_DIR"
 
 echo "=========================================="
 echo "  Multi-Tier Trading Bot Launcher"
+echo "  Tiers 1-4: All Strategies"
 echo "=========================================="
 
 # Check environment variables
@@ -32,10 +33,20 @@ if command -v tmux &> /dev/null; then
     tmux new-window -t trading_bots -n tier3
     tmux send-keys -t trading_bots:tier3 "cd $SCRIPT_DIR && ./launch_tier3.sh" C-m
 
+    # Create window for Tier 4
+    tmux new-window -t trading_bots -n tier4
+    tmux send-keys -t trading_bots:tier4 "cd $SCRIPT_DIR && ./launch_tier4.sh" C-m
+
     echo ""
-    echo "All bots launched in tmux session 'trading_bots'"
+    echo "All 4 bots launched in tmux session 'trading_bots'"
     echo "Attach with: tmux attach -t trading_bots"
-    echo "Switch windows with: Ctrl+B then 0/1/2"
+    echo "Switch windows with: Ctrl+B then 0/1/2/3"
+    echo ""
+    echo "Tiers:"
+    echo "  0: Tier 1 - Institutional (VWAP, CVD, Ichimoku)"
+    echo "  1: Tier 2 - Advanced Technical (Squeeze, Fisher)"
+    echo "  2: Tier 3 - Smart Money (Order Blocks, FVG)"
+    echo "  3: Tier 4 - High Win Rate (Mean Reversion)"
     echo ""
 
     # Attach to session
@@ -56,7 +67,10 @@ else
     nohup ./launch_tier3.sh > tier3.out 2>&1 &
     echo "Tier 3 started (PID: $!)"
 
+    nohup ./launch_tier4.sh > tier4.out 2>&1 &
+    echo "Tier 4 started (PID: $!)"
+
     echo ""
-    echo "All bots running in background"
-    echo "Check logs: tail -f tier1.out tier2.out tier3.out"
+    echo "All 4 bots running in background"
+    echo "Check logs: tail -f tier1.out tier2.out tier3.out tier4.out"
 fi
