@@ -1,0 +1,132 @@
+# Tier 4 - High Win Rate Configuration
+# Multi-confluence mean reversion targeting 75-85% accuracy
+
+telegram:
+  bot_token: "${TELEGRAM_BOT_TOKEN}"
+  chat_id: "${TELEGRAM_CHAT_ID}"
+
+exchange:
+  name: mexc
+  sandbox: false
+  timeout: 30000
+  enableRateLimit: true
+
+# Trading pairs to monitor (same across all tiers)
+pairs:
+  - BTC/USDT
+  - ETH/USDT
+  - SOL/USDT
+  - XRP/USDT
+  - DOGE/USDT
+  - ADA/USDT
+  - AVAX/USDT
+  - LINK/USDT
+  - DOT/USDT
+  - MATIC/USDT
+
+timeframe: "15m"
+enable_long: true
+enable_short: true
+
+strategy:
+  name: "tier4_high_winrate"
+  description: "Multi-confluence mean reversion for maximum win rate"
+
+  # Minimum confluence score for signal (higher = fewer but better signals)
+  min_confluence_score: 5.0
+  strong_signal_score: 7.0
+
+  # Risk management (lower R:R acceptable for higher win rate)
+  risk_reward_ratio: 1.5
+  atr_multiplier_sl: 1.2
+
+  # Component weights (tune these based on backtesting)
+  weights:
+    rsi_extreme: 2.0        # RSI at extreme levels
+    bb_touch: 2.0           # Price touching Bollinger Band
+    stoch_rsi: 1.5          # Stochastic RSI confirmation
+    volume_climax: 2.0      # Volume spike/climax
+    rsi_divergence: 2.5     # RSI divergence (strong signal)
+    near_sr: 2.0            # Near support/resistance
+    regime_bonus: 1.5       # Bonus for ranging market
+    trend_alignment: 1.0    # Trading with the trend
+
+# Indicator settings
+indicators:
+  # RSI
+  rsi_period: 14
+  rsi_oversold: 30
+  rsi_overbought: 70
+  rsi_extreme_oversold: 20
+  rsi_extreme_overbought: 80
+
+  # Bollinger Bands
+  bb_period: 20
+  bb_std: 2.0
+
+  # Moving Averages
+  ema_fast: 21
+  ema_slow: 50
+  ema_trend: 200
+
+  # Stochastic RSI
+  stoch_period: 14
+  stoch_smooth: 3
+
+# Signal tracking
+signal_tracking:
+  enabled: true
+  database_path: "tier4_signals.db"
+  signal_expiry_hours: 24
+  cooldown_minutes: 45  # Shorter cooldown for mean reversion
+
+# Accuracy filters (strict for high win rate)
+accuracy_filters:
+  enabled: true
+  min_confidence: 0.7  # Higher threshold
+  volume_filter:
+    enabled: true
+    min_ratio: 1.2  # Require above average volume
+  volatility_filter:
+    enabled: true
+    min_atr_percent: 0.2
+    max_atr_percent: 4.0  # Avoid extreme volatility
+  multi_timeframe:
+    enabled: true
+    higher_timeframe: "1h"
+    require_alignment: false  # Mean reversion can work counter-trend short term
+
+# Heartbeat monitoring
+heartbeat:
+  enabled: true
+  interval_seconds: 300
+  include_stats: true
+
+# Logging
+logging:
+  level: INFO
+  file: "tier4_high_winrate.log"
+  max_size_mb: 10
+  backup_count: 5
+
+# ===========================================
+# TRADE EXECUTION SETTINGS
+# WARNING: Enable only when ready for live trading
+# ===========================================
+execution:
+  enabled: false  # Set to true to enable trade execution
+
+  # Risk management
+  max_position_size_percent: 5.0   # Max % of balance per trade
+  max_open_positions: 3            # Max concurrent positions
+  risk_per_trade_percent: 1.0      # Risk % per trade (for position sizing)
+
+  # Order settings
+  use_stop_loss: true              # Place SL orders
+  use_take_profit: true            # Place TP orders
+
+  # Execution filters
+  min_score_for_execution: 6.0     # Only execute signals with score >= this
+
+  # Safety
+  close_on_shutdown: false         # Close all positions when bot stops

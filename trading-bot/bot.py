@@ -33,6 +33,29 @@ def load_config(config_path: str = 'config.yaml') -> dict:
     try:
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
+
+        # Fix: Validate required configuration sections
+        required_sections = ['exchange', 'pairs', 'timeframe', 'strategy', 'bot']
+        for section in required_sections:
+            if section not in config:
+                raise ValueError(f"Missing required config section: {section}")
+
+        # Validate required strategy keys
+        required_strategy_keys = ['use_trend_filter', 'rsi_oversold', 'rsi_overbought',
+                                   'adx_threshold', 'volume_multiplier', 'weights',
+                                   'score_threshold', 'atr_multiplier_sl', 'risk_reward_ratio']
+        for key in required_strategy_keys:
+            if key not in config['strategy']:
+                raise ValueError(f"Missing required strategy key: {key}")
+
+        # Set defaults for optional keys
+        if 'logging' not in config:
+            config['logging'] = {'level': 'INFO', 'file': 'trading_bot.log'}
+        if 'enable_long' not in config:
+            config['enable_long'] = True
+        if 'enable_short' not in config:
+            config['enable_short'] = True
+
         return config
     except Exception as e:
         print(f"Error loading config: {e}")

@@ -346,7 +346,10 @@ class AdvancedIndicatorCalculator:
                 else:
                     trend[i] = -1
             
-            vf = volume * trend * np.abs(2 * ((high - low) / (high + low)) - 1) * 100
+            # Fix: Prevent division by zero when high + low = 0
+            hl_sum = high + low
+            hl_sum = np.where(hl_sum == 0, 1e-10, hl_sum)  # Replace zeros with small value
+            vf = volume * trend * np.abs(2 * ((high - low) / hl_sum) - 1) * 100
             
             fast_ema = pd.Series(vf).ewm(span=fast, adjust=False).mean().values
             slow_ema = pd.Series(vf).ewm(span=slow, adjust=False).mean().values
@@ -413,15 +416,32 @@ class AdvancedIndicatorCalculator:
             klinger_signal = strategy.get('klinger_signal', 13)
             df['klinger'], df['klinger_signal'] = self.calculate_klinger(df, klinger_fast, klinger_slow, klinger_signal)
             
-            df['adx'] = ta.adx(df['high'], df['low'], df['close'], length=strategy.get('adx_length', 14))[f"ADX_{strategy.get('adx_length', 14)}"]
+            # Fix: Use dynamic column name extraction instead of hardcoded names
+            adx_length = strategy.get('adx_length', 14)
+            adx_result = ta.adx(df['high'], df['low'], df['close'], length=adx_length)
+            adx_col = [col for col in adx_result.columns if col.startswith('ADX_')][0]
+            df['adx'] = adx_result[adx_col]
+
             df['atr'] = ta.atr(df['high'], df['low'], df['close'], length=strategy.get('atr_length', 14))
-            df['macd'] = ta.macd(df['close'], fast=strategy.get('macd_fast', 12), slow=strategy.get('macd_slow', 26), signal=strategy.get('macd_signal', 9))[f"MACD_{strategy.get('macd_fast', 12)}_{strategy.get('macd_slow', 26)}_{strategy.get('macd_signal', 9)}"]
-            df['macd_signal'] = ta.macd(df['close'], fast=strategy.get('macd_fast', 12), slow=strategy.get('macd_slow', 26), signal=strategy.get('macd_signal', 9))[f"MACDs_{strategy.get('macd_fast', 12)}_{strategy.get('macd_slow', 26)}_{strategy.get('macd_signal', 9)}"]
+
+            macd_fast = strategy.get('macd_fast', 12)
+            macd_slow = strategy.get('macd_slow', 26)
+            macd_signal_len = strategy.get('macd_signal', 9)
+            macd_result = ta.macd(df['close'], fast=macd_fast, slow=macd_slow, signal=macd_signal_len)
+            macd_col = [col for col in macd_result.columns if col.startswith('MACD_') and not col.startswith('MACDs') and not col.startswith('MACDh')][0]
+            macd_signal_col = [col for col in macd_result.columns if col.startswith('MACDs_')][0]
+            df['macd'] = macd_result[macd_col]
+            df['macd_signal'] = macd_result[macd_signal_col]
             
             df['avg_volume'] = ta.sma(df['volume'], length=strategy.get('volume_period', 20))
             
             df.dropna(inplace=True)
-            
+
+            # Fix: Check for data insufficiency after dropna
+            if len(df) < 50:
+                logger.warning(f"Insufficient data after indicator calculation: {len(df)} bars remaining")
+                return None
+
             logger.debug(f"Calculated all advanced indicators for {len(df)} bars")
             return df
             
