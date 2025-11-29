@@ -174,8 +174,9 @@ class AdvancedConfluenceStrategy:
             lower = iqr_lower if use_iqr else mad_lower
             basis = iqr_basis if use_iqr else last_bar['mad_basis']
             
+            # Fix: Use >= instead of > for ADX threshold comparison
             adx_threshold = strategy.get('mr_adx_threshold', 20)
-            if adx > adx_threshold:
+            if adx >= adx_threshold:
                 return None  # Skip mean reversion in trending markets
             
             rsx_oversold = strategy.get('rsx_oversold', 30)

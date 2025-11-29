@@ -43,7 +43,12 @@ class IndicatorCalculator:
             df['avg_volume'] = ta.sma(df['volume'], length=volume_period)
             
             df.dropna(inplace=True)
-            
+
+            # Fix: Check for data insufficiency after dropna
+            if len(df) < 50:
+                logger.warning(f"Insufficient data after indicator calculation: {len(df)} bars remaining")
+                return None
+
             logger.debug(f"Calculated indicators for {len(df)} bars")
             return df
             

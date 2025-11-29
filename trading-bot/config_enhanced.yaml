@@ -1,0 +1,176 @@
+# Enhanced Confluence Trading Bot Configuration
+# Features: Signal Tracking, Multi-Timeframe, Quality Scoring
+
+exchange:
+  name: mexc
+  type: futures
+  testnet: false
+
+# Trading pairs to monitor
+pairs:
+  - LAB/USDT
+  - MINA/USDT
+  - APR/USDT
+  - KITE/USDT
+  - BLUAI/USDT
+  - ON/USDT
+  - RIVER/USDT
+  - CLO/USDT
+
+timeframe: 15m
+
+# Strategy mode: trend_following, mean_reversion, breakout, adaptive
+strategy_mode: trend_following
+
+# Core strategy settings
+strategy:
+  # FRAMA - Fractal Adaptive Moving Average
+  frama_length: 16
+
+  # Jurik RSX - Smoother RSI
+  rsx_length: 14
+  rsx_oversold: 30
+  rsx_overbought: 70
+
+  # SuperTrend
+  supertrend_length: 22
+  supertrend_mult: 3.0
+
+  # Chandelier Exit
+  chandelier_length: 22
+  chandelier_mult: 3.0
+
+  # Parabolic SAR
+  psar_start: 0.02
+  psar_increment: 0.02
+  psar_max: 0.2
+
+  # IQR Bands
+  iqr_length: 20
+  iqr_mult: 1.5
+  use_iqr_bands: true
+
+  # Kirshenbaum Bands
+  kb_length: 20
+  kb_mult: 2.0
+
+  # MAD Bands
+  mad_length: 20
+  mad_mult: 2.0
+
+  # Volatility Ratio
+  vr_short: 5
+  vr_long: 20
+  vr_threshold: 0.5
+
+  # Klinger Volume Oscillator
+  klinger_fast: 34
+  klinger_slow: 55
+  klinger_signal: 13
+
+  # Additional indicators
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  adx_length: 14
+  adx_threshold: 20
+  atr_length: 14
+  volume_period: 20
+  volume_multiplier: 1.2
+
+  # Scoring weights
+  weights:
+    trend: 1.0
+    supertrend: 2.0
+    rsx: 1.0
+    macd: 1.0
+    adx: 1.0
+    volume: 0.5
+
+  # Minimum score to generate signal
+  score_threshold: 3.0
+
+  # Risk management
+  risk_reward_ratio: 1.5
+  atr_multiplier_sl: 1.5
+
+  # Mean reversion settings
+  mr_adx_threshold: 20
+  mr_atr_mult: 1.0
+
+  # Breakout settings
+  breakout_volume_mult: 1.5
+
+# Signal direction toggles
+enable_long: true
+enable_short: true
+
+# Signal tracking configuration
+signal_tracking:
+  enabled: true
+  expiry_hours: 24  # Signals expire after 24 hours if no TP/SL hit
+  cooldown_minutes: 60  # Minimum time between signals for same pair/direction
+
+# Accuracy filters configuration
+accuracy_filters:
+  # Multi-timeframe confirmation
+  enable_mtf_filter: true
+  mtf_min_confidence: 50  # Minimum HTF confidence to reject counter-trend
+
+  # Volume filter
+  enable_volume_filter: true
+  min_volume_ratio: 1.0  # Minimum volume vs average
+  volume_spike_threshold: 2.0  # Volume considered a "spike"
+
+  # Volatility filter
+  enable_volatility_filter: true
+  max_atr_percent: 5.0  # Skip signals with extreme volatility
+  min_atr_percent: 0.3  # Skip signals with too low volatility
+
+  # Signal quality scoring
+  enable_signal_scoring: true
+  min_signal_score: 6.0  # Minimum quality score (1-10) to accept signal
+
+  # Scoring weights
+  scoring_weights:
+    trend_alignment: 2.0
+    momentum: 1.5
+    volume: 1.0
+    volatility: 1.0
+    mtf_confirmation: 2.5
+    support_resistance: 1.5
+
+  # Correlation filter (prevent too many correlated signals)
+  enable_correlation_filter: false
+  max_signals_per_group: 2
+
+# Heartbeat and health monitoring
+heartbeat:
+  enabled: true
+  interval_hours: 6  # Send heartbeat every 6 hours
+
+# Daily summary configuration
+daily_summary:
+  enabled: true
+  hour: 0  # Hour to send summary (0-23)
+  minute: 0  # Minute to send summary
+
+# Health monitoring
+health_monitoring:
+  alert_after_failures: 5  # Send alert after N consecutive failures
+
+# Bot operation settings
+bot:
+  check_interval: 60  # Seconds between market checks
+  lookback_bars: 300  # Historical bars to fetch
+
+# API settings
+api_timeout: 30000  # API timeout in milliseconds
+
+# Database path
+database_path: signals.db
+
+# Logging configuration
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  file: trading_bot_enhanced.log
