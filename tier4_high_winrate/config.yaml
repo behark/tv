@@ -108,3 +108,25 @@ logging:
   file: "tier4_high_winrate.log"
   max_size_mb: 10
   backup_count: 5
+
+# ===========================================
+# TRADE EXECUTION SETTINGS
+# WARNING: Enable only when ready for live trading
+# ===========================================
+execution:
+  enabled: false  # Set to true to enable trade execution
+
+  # Risk management
+  max_position_size_percent: 5.0   # Max % of balance per trade
+  max_open_positions: 3            # Max concurrent positions
+  risk_per_trade_percent: 1.0      # Risk % per trade (for position sizing)
+
+  # Order settings
+  use_stop_loss: true              # Place SL orders
+  use_take_profit: true            # Place TP orders
+
+  # Execution filters
+  min_score_for_execution: 6.0     # Only execute signals with score >= this
+
+  # Safety
+  close_on_shutdown: false         # Close all positions when bot stops
