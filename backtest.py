@@ -76,15 +76,18 @@ async def fetch_historical_data(symbol: str, timeframe: str,
                                  start_date: datetime, end_date: datetime) -> 'pd.DataFrame':
     """Fetch historical OHLCV data from exchange."""
     import pandas as pd
+    import ccxt.async_support as ccxt_async
 
-    client = EnhancedExchangeClient(
-        exchange_id='mexc',
-        config={'enableRateLimit': True, 'timeout': 30000}
-    )
+    # Use ccxt directly for fetching
+    exchange = ccxt_async.mexc({
+        'enableRateLimit': True,
+        'timeout': 30000
+    })
 
-    await client.load_markets()
+    await exchange.load_markets()
 
-    formatted_symbol = client.format_symbol(symbol)
+    # Format symbol
+    formatted_symbol = symbol.replace('/', '')
 
     # Calculate number of candles needed
     timeframe_minutes = {
@@ -105,8 +108,8 @@ async def fetch_historical_data(symbol: str, timeframe: str,
 
     while since < end_ts:
         try:
-            ohlcv = await client.exchange.fetch_ohlcv(
-                formatted_symbol,
+            ohlcv = await exchange.fetch_ohlcv(
+                symbol,
                 timeframe=timeframe,
                 since=since,
                 limit=1000
@@ -122,12 +125,13 @@ async def fetch_historical_data(symbol: str, timeframe: str,
             progress = (since - int(start_date.timestamp() * 1000)) / (end_ts - int(start_date.timestamp() * 1000)) * 100
             print(f"  Progress: {progress:.1f}%", end='\r')
 
-            await asyncio.sleep(0.1)  # Rate limiting
+            await asyncio.sleep(0.2)  # Rate limiting
 
         except Exception as e:
             print(f"\nError fetching data: {e}")
             break
 
+    await exchange.close()
     print(f"\nFetched {len(all_data)} candles")
 
     if not all_data:

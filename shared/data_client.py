@@ -300,3 +300,7 @@ class DataClient:
         except Exception as e:
             logger.error(f"Error getting market info for {symbol}: {e}")
             return None
+
+
+# Alias for compatibility
+EnhancedExchangeClient = DataClient
