@@ -1,0 +1,111 @@
+# Tier 3 - Smart Money Concepts Configuration
+# ICT-style indicators for institutional order flow analysis
+
+telegram:
+  bot_token: "${TELEGRAM_BOT_TOKEN}"
+  chat_id: "${TELEGRAM_CHAT_ID}"
+
+exchange:
+  name: mexc
+  sandbox: false
+  timeout: 30000
+  enableRateLimit: true
+
+# Trading pairs to monitor (same across all tiers)
+pairs:
+  - BTC/USDT
+  - ETH/USDT
+  - SOL/USDT
+  - XRP/USDT
+  - DOGE/USDT
+  - ADA/USDT
+  - AVAX/USDT
+  - LINK/USDT
+  - DOT/USDT
+  - MATIC/USDT
+
+timeframe: "15m"
+enable_long: true
+enable_short: true
+
+strategy:
+  name: "tier3_smart_money"
+  description: "Smart Money Concepts - ICT-style trading"
+
+  # Score threshold for signal generation
+  score_threshold: 4.5
+
+  # Risk management
+  risk_reward_ratio: 2.0
+  atr_multiplier_sl: 1.5
+
+  # Indicator weights
+  weights:
+    structure: 2.5        # BOS/CHoCH - strongest signals
+    order_block: 2.0      # Order Block entries
+    fvg: 1.5              # Fair Value Gap retracements
+    liquidity: 2.0        # Liquidity grab reversals
+    premium_discount: 1.5 # Value zone positioning
+    ema_bias: 1.0         # Trend alignment
+    supertrend: 1.0       # Trend confirmation
+
+# Smart Money specific settings
+smc:
+  # Swing detection
+  swing_lookback: 10
+
+  # Structure analysis
+  structure_lookback: 50
+
+  # Order Block settings
+  ob_lookback: 20
+  ob_mitigation_threshold: 0.5  # 50% into OB = mitigated
+
+  # Fair Value Gap settings
+  fvg_min_gap_percent: 0.1  # Minimum gap size (% of price)
+  fvg_lookback: 20
+
+  # Liquidity settings
+  liquidity_lookback: 20
+  liquidity_threshold: 0.002  # 0.2% beyond swing
+
+  # Premium/Discount zones
+  pd_lookback: 50
+  premium_threshold: 0.618  # Above 61.8% = premium
+  discount_threshold: 0.382 # Below 38.2% = discount
+
+# Signal tracking
+signal_tracking:
+  enabled: true
+  database_path: "tier3_signals.db"
+  signal_expiry_hours: 24
+  cooldown_minutes: 60
+
+# Accuracy filters
+accuracy_filters:
+  enabled: true
+  min_confidence: 0.6
+  volume_filter:
+    enabled: true
+    min_ratio: 1.0
+  volatility_filter:
+    enabled: true
+    min_atr_percent: 0.3
+    max_atr_percent: 5.0
+  multi_timeframe:
+    enabled: true
+    higher_timeframe: "1h"
+    require_alignment: true
+
+# Heartbeat monitoring
+heartbeat:
+  enabled: true
+  interval_seconds: 300
+  include_stats: true
+
+# Logging
+logging:
+  level: INFO
+  file: "tier3_smart_money.log"
+  max_size_mb: 10
+  backup_count: 5

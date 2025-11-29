@@ -1,0 +1,112 @@
+# Tier 1 - Institutional Trading Bot Configuration
+# Focus: VWAP, CVD, Funding Rate, Ichimoku, Institutional Analysis
+
+bot_name: "Tier 1 - Institutional"
+bot_tier: 1
+
+exchange:
+  name: mexc
+  type: futures
+  testnet: false
+
+# Same pairs across all tiers for comparison
+pairs:
+  - LAB/USDT
+  - MINA/USDT
+  - APR/USDT
+  - KITE/USDT
+  - BLUAI/USDT
+  - ON/USDT
+  - RIVER/USDT
+  - CLO/USDT
+
+timeframe: 15m
+
+strategy:
+  # SuperTrend settings
+  supertrend_length: 22
+  supertrend_mult: 3.0
+
+  # Ichimoku settings
+  ichimoku_tenkan: 9
+  ichimoku_kijun: 26
+  ichimoku_senkou: 52
+
+  # EMA Ribbon
+  ema_periods: [8, 13, 21, 34, 55]
+
+  # Volume settings
+  volume_period: 20
+  volume_multiplier: 1.2
+
+  # Momentum
+  rsi_length: 14
+  mfi_length: 14
+
+  # Common
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  adx_length: 14
+  atr_length: 14
+
+  # Scoring weights
+  weights:
+    vwap: 2.0           # VWAP position
+    ichimoku: 2.0       # Cloud + TK cross
+    supertrend: 1.5     # Trend direction
+    cvd: 1.5            # Volume delta
+    ema_alignment: 1.0  # EMA ribbon
+    volume_flow: 1.0    # CMF/OBV
+    momentum: 1.0       # RSI/MFI
+    funding: 0.5        # Funding rate
+
+  score_threshold: 4.0
+  risk_reward_ratio: 1.5
+  atr_multiplier_sl: 1.5
+
+# Signal tracking
+signal_tracking:
+  enabled: true
+  expiry_hours: 24
+  cooldown_minutes: 60
+
+# Accuracy filters
+accuracy_filters:
+  enable_mtf_filter: true
+  enable_volume_filter: true
+  enable_volatility_filter: true
+  enable_signal_scoring: true
+  min_signal_score: 6.0
+
+# Institutional data
+institutional:
+  use_funding_rate: true
+  use_open_interest: true
+  use_order_book: true
+  contrarian_funding_threshold: 0.001
+
+# Heartbeat
+heartbeat:
+  enabled: true
+  interval_hours: 6
+
+# Daily summary
+daily_summary:
+  enabled: true
+  hour: 0
+  minute: 0
+
+enable_long: true
+enable_short: true
+
+bot:
+  check_interval: 60
+  lookback_bars: 300
+
+api_timeout: 30000
+database_path: tier1_signals.db
+
+logging:
+  level: INFO
+  file: tier1_institutional.log

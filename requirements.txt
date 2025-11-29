@@ -1,0 +1,26 @@
+# Multi-Tier Trading Bot Requirements
+# Supports: Tier 1 (Institutional), Tier 2 (Advanced Technical), Tier 3 (Smart Money)
+
+# Core dependencies
+ccxt>=4.4.27
+pandas>=2.0.0
+numpy>=1.24.0
+pandas-ta>=0.3.14b0
+python-dotenv>=1.0.0
+pyyaml>=6.0
+requests>=2.31.0
+
+# Async support
+aiohttp>=3.9.0
+
+# Database
+# SQLite is built into Python, no additional package needed
+
+# Type hints
+typing-extensions>=4.0.0
+
+# Scheduling
+schedule>=1.2.0
+
+# Optional: For enhanced technical analysis
+scipy>=1.11.0
